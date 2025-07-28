@@ -1,0 +1,15 @@
+{
+  "hash": "92950eb699671daa99b980af70debc40",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Week 11 Practical: Modeling the distribution of the Inland Taipan ()\"\n---\n\n\n## Quarto\n\nQuarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.\n\n\n::: {.cell}\n\n```{.r .cell-code}\nlibrary(galah)\n```\n\n::: {.cell-output .cell-output-stderr}\n\n```\ngalah: version 2.1.1\nℹ Default node set to ALA (ala.org.au).\nℹ See all supported GBIF nodes with `show_all(atlases)`.\nℹ To change nodes, use e.g. `galah_config(atlas = \"GBIF\")`.\nAttaching package: 'galah'\n\nThe following object is masked from 'package:stats':\n\n    filter\n```\n\n\n:::\n\n```{.r .cell-code}\nlibrary(terra)\n```\n\n::: {.cell-output .cell-output-stderr}\n\n```\nterra 1.8.50\n```\n\n\n:::\n\n```{.r .cell-code}\nlibrary(CoordinateCleaner)\n```\n:::\n\n::: {.cell}\n\n:::",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
