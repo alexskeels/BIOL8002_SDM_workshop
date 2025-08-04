@@ -1,5 +1,5 @@
 ---
-title: "Species Distribution Modeling in R: Week 12"
+title: "Week 12 Prac: Climate data and statistical SDMs in R"
 author: "Alex Skeels"
 date: "`r Sys.Date()`"
 format: html
@@ -22,7 +22,7 @@ To make sure we're all on the same page and have access to the data, do this at 
 
 2.  Open RStudio
 
-3.  Open Week 12 project file in RStudio
+3.  Open project file in RStudio "SDM_practical.RProj"
 
 # **Introduction**
 

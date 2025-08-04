@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Alex Skeels">
-<meta name="dcterms.date" content="2025-07-28">
+<meta name="dcterms.date" content="2025-08-04">
 
-<title>Species Distribution Modeling in R: Week 12</title>
+<title>Week 12 Prac: Climate data and statistical SDMs in R</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -81,7 +81,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Species Distribution Modeling in R: Week 12</h1>
+<h1 class="title">Week 12 Prac: Climate data and statistical SDMs in R</h1>
 </div>
 
 
@@ -98,7 +98,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">July 28, 2025</p>
+      <p class="date">August 4, 2025</p>
     </div>
   </div>
   
@@ -116,7 +116,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ol type="1">
 <li><p>Make sure you have access to the data from GitHub (we downloaded this last week)</p></li>
 <li><p>Open RStudio</p></li>
-<li><p>Open Week 12 project file in RStudio</p></li>
+<li><p>Open project file in RStudio “SDM_practical.RProj”</p></li>
 </ol>
 </section>
 <section id="introduction" class="level1">
@@ -166,9 +166,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bioclim_data[[<span class="fu">which</span>(<span class="fu">names</span>(bioclim_data)<span class="sc">==</span><span class="st">"wc2.1_5m_bio_1"</span>)]], <span class="at">main =</span> <span class="st">"Mean Annual Temp (Bio1)"</span>)</span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bioclim_data[[<span class="fu">which</span>(<span class="fu">names</span>(bioclim_data)<span class="sc">==</span><span class="st">"wc2.1_5m_bio_12"</span>)]], <span class="at">main =</span> <span class="st">"Mean Annual Prec (Bio12)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p><br> <br></p>
 <hr>
-<p><br> <br></p>
 </section>
 </section>
 <section id="pseudo-absence-points" class="level1">
@@ -229,9 +227,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>Question:</strong> What is the main difference between sampling background points inside or outside the known distribution? How might this affect an SDM?</li>
 </ul>
 <p>You can see that defining the background points will change the degree of contrast between presence and absence environments. Before moving on, select which background points you will use.</p>
-<p><br> <br></p>
 <hr>
-<p><br> <br></p>
 </section>
 </section>
 </section>

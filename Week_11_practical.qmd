@@ -1,5 +1,5 @@
 ---
-title: "Species Distribution Modeling in R: Week 11"
+title: "Week 11 Prac: Points, polygons, and geometric SDMs in R"
 author: "Alex Skeels"
 date: "`r Sys.Date()`"
 format: html
@@ -18,11 +18,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 To make sure we're all on the same page and have access to the data, do this at the start of the workshop.
 
-1.  Download the GitHub repository [github.com](https://github.com/alexskeels/8002)
+1.  Download the GitHub repository by making a clone (https://github.com/alexskeels/
+BIOL8002_SDM_workshop
+)
 
-2.  Open RStudio
+![](github_screenshot.png){fig-align="center"}
 
-3.  Open Week 11 project file in RStudio
+2.  Unzip the folder "BIOL8002_SDM_workshop-main.zip"
+
+3.  Open RStudio
+
+4.  Open project file in RStudio "SDM_practical.RProj"
 
 # **Introduction**
 
