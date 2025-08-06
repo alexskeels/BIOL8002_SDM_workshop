@@ -302,10 +302,12 @@ We now want to turn the alpha hull object into an object of class "sf". This is 
 # Convert alpha hull to sf POLYGON
 ahull_spatial <- ahull2poly(ahull_obj)
 
+# separate each sub-polygon
+sub_polys <- slot(ahull_spatial, "polygons")
+
 # Convert each sub-polygon to its own SpatialPolygons object
 poly_list <- lapply(seq_along(sub_polys), function(i) {
-  # Create a SpatialPolygons object with one sub-polygon
-  SpatialPolygons(list(Polygons(list(sub_polys[[i]]), ID = as.character(i))))
+ SpatialPolygons(list(sub_polys[[i]]), proj4string = CRS(proj4string(ahull_spatial)))
 })
 
 # Convert each to sf and combine into one sf object
