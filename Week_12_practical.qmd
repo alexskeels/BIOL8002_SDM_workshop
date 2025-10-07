@@ -2,7 +2,9 @@
 title: "Week 12 Prac: Climate data and statistical SDMs in R"
 author: "Alex Skeels"
 date: "`r Sys.Date()`"
-format: html
+format: 
+  html:
+    self-contained: true
 execute:
   eval: false
   warning: false
@@ -79,7 +81,6 @@ plot(bioclim_data[[which(names(bioclim_data)=="wc2.1_5m_bio_12")]], main = "Mean
 ```
 
 ------------------------------------------------------------------------
-
 
 # **2**: Pseudo-Absence Points
 
@@ -172,7 +173,7 @@ predictor_vars <- colnames(bioclim_pres_abs_uncor)[grep("wc2.1_", colnames(biocl
 print(predictor_vars)
 ```
 
-Now that we have a set of uncorrelated predictor variables, now we can define our models and fit them. Here the spline values is deined as k = 4, for more complex curves you can increase this value, or for more simple curves you can reduce this.
+Now that we have a set of uncorrelated predictor variables, we can define our models and fit them. Here the spline values is given as k = 4, for more complex curves you can increase this value, or for more simple curves you can reduce this.
 
 ```{r}
 # establish model formulas for GLM and GAM
@@ -224,8 +225,7 @@ plot(glm_eval, "ROC")
 plot(gam_eval, "ROC")
 ```
 
--   **Question:** How did your models perform? 
-
+-   **Question:** How did your models perform?
 
 But how stable are these AUC values? and how well does the model perform when evaluating the model on unseen data? To explore this, we’ll use k-fold cross-validation. This technique splits the data into k subsets (or "folds"), trains the model on k – 1 of them, and tests it on the remaining fold. This is repeated k times, giving us a better estimate of how variable model performance is across different subsets of the data.
 
@@ -286,6 +286,7 @@ plot(glm_prediction, main="glm")
 plot(gam_prediction, main="gam")
 
 ```
+
 #### Thresholding Habitat Suitability
 
 To translate these continuous predictions into a map of presence vs. absence, we need to apply a threshold. One common approach is to use the threshold that maximizes the Kappa statistic, which balances both sensitivity (true positives) and specificity (true negatives).
@@ -302,6 +303,7 @@ par(mfrow=c(1,2))
 plot(glm_prediction > glm_threshold_val, main="GLM binary")
 plot(gam_prediction > gam_threshold_val, main="GAM binary")
 ```
+
 #### Putting it together
 
 Finally, we’ll overlay our species occurrence records and alpha hull boundary on the binary prediction map. This lets us compare the model-based distribution with the observed occurrences, giving us a sense of how well the model aligns with known data.
@@ -318,6 +320,7 @@ plot(occ_sp, add=T, pch=1)
 plot(ahull_v, add=T)
 
 ```
+
 -   **Question:** Which method provides a better representation of the species range?
 
 -   **Question:** What might we do to improve our SDM models?

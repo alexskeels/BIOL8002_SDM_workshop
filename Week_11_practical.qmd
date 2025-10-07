@@ -2,7 +2,9 @@
 title: "Week 11 Prac: Points, polygons, and geometric SDMs in R"
 author: "Alex Skeels"
 date: "`r Sys.Date()`"
-format: html
+format: 
+  html:
+    self-contained: true
 execute:
   eval: false
   warning: false
@@ -18,9 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 To make sure we're all on the same page and have access to the data, do this at the start of the workshop.
 
-1.  Download the GitHub repository by making a clone (https://github.com/alexskeels/
-BIOL8002_SDM_workshop
-)
+1.  Download the GitHub repository by making a clone (https://github.com/alexskeels/BIOL8002_SDM_workshop )
 
 ![](github_screenshot.png){fig-align="center"}
 
@@ -57,6 +57,7 @@ pacman::p_load(sf)  # For vector data
 pacman::p_load(sp) 
 pacman::p_load(ggplot2)  # For plotting
 pacman::p_load(rnaturalearth) # For polygons
+pacman::p_load(rnaturalearthdata)
 pacman::p_load(dplyr) # For data wrangling
 
 # To make Alpha-Hulls we need to install a package from GitHub as well
@@ -126,7 +127,6 @@ ggplot() +
 -   **Question:** What can you notice about the distribution of occurrence records? Anything unusual?
 
 ------------------------------------------------------------------------
-
 
 # **2**: Cleaning the data
 
@@ -230,7 +230,6 @@ ggplot() +
 Now we have a roughly cleaned data set of species occurrences from ALA. We are happy that they fall within the likely range of the Frilled Lizard. However, we have noted that both the IUCN polygon and ALA occurrence records each have biases which mean they might over- or under-estimate the species range.
 
 ------------------------------------------------------------------------
-
 
 # **3**: Geometric Species Distribution Models
 
@@ -350,7 +349,7 @@ ggplot() +
 Save the alpha hull as we will use it again in next week's prac
 
 ```{r}
-st_write(ahull_sf, "distribution/frilled_lizard_alpha_hull.shp")
+st_write(ahull_sf, "distribution/frilled_lizard_alpha_hull.shp", append=F)
 
 ```
 
