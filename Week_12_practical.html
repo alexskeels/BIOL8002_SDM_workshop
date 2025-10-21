@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Alex Skeels">
-<meta name="dcterms.date" content="2025-10-08">
+<meta name="dcterms.date" content="2025-10-22">
 
 <title>Week 12 Prac: Climate data and statistical SDMs in R</title>
 <style>
@@ -2197,7 +2197,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">October 8, 2025</p>
+      <p class="date">October 22, 2025</p>
     </div>
   </div>
   
@@ -2283,45 +2283,70 @@ vertical-align: -.125em;
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>bck_outside <span class="ot">&lt;-</span> <span class="fu">erase</span>(bck, ahull_v)</span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove points outside the alpha hull</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>bck_inside <span class="ot">&lt;-</span> <span class="fu">mask</span>(bck, ahull_v)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>bck_inside <span class="ot">&lt;-</span> <span class="fu">mask</span>(bck, <span class="fu">buffer</span>(ahull_v, <span class="at">width=</span><span class="dv">500000</span>))</span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># plot inside versus outside</span></span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bioclim_data[[<span class="dv">1</span>]], <span class="at">main =</span> <span class="st">&quot;Mean Annual Temperature&quot;</span>)</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bck_inside , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bck_outside , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bck_outside , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bck_inside , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Randomly sampling points from inside or outside the study area does not account for the biases present in the occurrence data. Most occurrence points are found along roads or close to urban areas. One way of dealing with this bias in the occurence points, is to replicate the same biases in the background points. For example we could preferentially sample backgrounds points in places where people have sampled other closely related species of Agamid lizards. To do this we can create a density map of occurence records for the family.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># read in distribution of all agamid species</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>agamid_occ <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;distribution/agamidae.csv&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># convert to spatVect object</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>agamid_occ <span class="ot">&lt;-</span> <span class="fu">vect</span>(agamid_occ, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">&quot;decimalLongitude&quot;</span>, <span class="st">&quot;decimalLatitude&quot;</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># get density of records in grid cells using rasterize function</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>agamid_density <span class="ot">&lt;-</span> <span class="fu">rasterize</span>(agamid_occ, bioclim_data[[<span class="dv">1</span>]], <span class="at">fun=</span><span class="st">&quot;sum&quot;</span> )</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># plot it out - where are the highest density of occurences?</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">log</span>(agamid_density))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now lets sample some background points accounting for this bias.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample 10,000 random points from across grid cells in the raster</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>bck_bias <span class="ot">&lt;-</span> <span class="fu">spatSample</span>(bioclim_data[[<span class="dv">1</span>]], <span class="dv">10000</span>, <span class="at">method =</span> <span class="st">&quot;stratified&quot;</span>, <span class="at">weights=</span>agamid_density, <span class="at">as.points =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove points that fall within the alpha hull </span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>bck_bias_outside <span class="ot">&lt;-</span> <span class="fu">erase</span>(bck_bias, ahull_v)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove points outside the alpha hull</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>bck_bias_inside <span class="ot">&lt;-</span> <span class="fu">mask</span>(bck_bias, <span class="fu">buffer</span>(ahull_v, <span class="at">width=</span><span class="dv">500000</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="extract-climate-from-presence-absence-records" class="level3">
 <h3 class="anchored" data-anchor-id="extract-climate-from-presence-absence-records">Extract climate from presence / absence records</h3>
 <p>Choose whether you want to use the approach of inside known range background points or outside known range, or both.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bck &lt;- bck_inside or bck_outside</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert occurrence records to spatial points</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>occ_sp <span class="ot">&lt;-</span> <span class="fu">vect</span>(occ, <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;Y&quot;</span>))</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualise presence and background</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bioclim_data[[<span class="dv">1</span>]], <span class="at">main =</span> <span class="st">&quot;Mean Annual Temperature&quot;</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bck , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(occ_sp , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">pch =</span> <span class="dv">20</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine presence and background points</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>pres_abs <span class="ot">&lt;-</span> <span class="fu">vect</span>(<span class="fu">c</span>(occ_sp, bck))  <span class="co"># bck_sp now assumed as bck</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract climate values</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs <span class="ot">&lt;-</span> <span class="fu">extract</span>(bioclim_data, pres_abs)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Add presence/absence label</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs<span class="sc">$</span>presence <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(occ)), <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">nrow</span>(bck)))</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(bioclim_pres_abs)</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the density of points</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(bioclim_pres_abs, <span class="fu">aes</span>(<span class="at">x=</span>wc2<span class="fl">.1</span>_5m_bio_1, <span class="at">fill=</span><span class="fu">as.factor</span>(presence)))<span class="sc">+</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha=</span><span class="fl">0.7</span>)<span class="sc">+</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bck &lt;- bck_inside or bck_outside</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert occurrence records to spatial points</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>occ_sp <span class="ot">&lt;-</span> <span class="fu">vect</span>(occ, <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;Y&quot;</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualise presence and background</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bioclim_data[[<span class="dv">1</span>]], <span class="at">main =</span> <span class="st">&quot;Mean Annual Temperature&quot;</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bck , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(occ_sp , <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">pch =</span> <span class="dv">20</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine presence and background points</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>pres_abs <span class="ot">&lt;-</span> <span class="fu">vect</span>(<span class="fu">c</span>(occ_sp, bck))  <span class="co"># bck_sp now assumed as bck</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract climate values</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs <span class="ot">&lt;-</span> <span class="fu">extract</span>(bioclim_data, pres_abs)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Add presence/absence label</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs<span class="sc">$</span>presence <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(occ)), <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">nrow</span>(bck)))</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(bioclim_pres_abs)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the density of points</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(bioclim_pres_abs, <span class="fu">aes</span>(<span class="at">x=</span>wc2<span class="fl">.1</span>_5m_bio_1, <span class="at">fill=</span><span class="fu">as.factor</span>(presence)))<span class="sc">+</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha=</span><span class="fl">0.7</span>)<span class="sc">+</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="task-1" class="level4">
 <h4 class="anchored" data-anchor-id="task-1">Task 1</h4>
-<p>Plot different the distribution of a couple of different tempereature and precipitation bioclim variables and make a note of how the presence and absence points occupy different parts of the climate space. Repeat for the two alternative kinds of background sampling methods.</p>
+<p>Plot different the distribution of a couple of different temperature and precipitation bioclim variables and make a note of how the presence and absence points occupy different parts of the climate space. Repeat for the two alternative kinds of background sampling methods.</p>
 <ul>
 <li><strong>Question:</strong> What is the main difference between sampling background points inside or outside the known distribution? How might this affect an SDM?</li>
 </ul>
@@ -2336,39 +2361,39 @@ vertical-align: -.125em;
 <p>Here, we are performing a simplified workflow to get an understanding of the fundamentals, but it is important to note that these models are by no means a “perfect” approach.</p>
 <p>Selecting environmental variables is an important step that requires a lot of thought. The predictors should be selected based on some ecological knowledge of the organism and not include variables that are irrelavant to the organisms. Here we are focusing only on climate variables. Both the GAM and GLM approaches don’t work particularly well with colinear predictors (i.e. highly correlated environmental variables). So the first step is to select the uncorrelated variables.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check variable collinearity</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>correlation_matrix <span class="ot">&lt;-</span> <span class="fu">cor</span>(bioclim_pres_abs[,<span class="dv">2</span><span class="sc">:</span><span class="dv">20</span>])</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>correlated <span class="ot">&lt;-</span> <span class="fu">findCorrelation</span>(correlation_matrix)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>names_correlated <span class="ot">&lt;-</span> <span class="fu">colnames</span>(bioclim_pres_abs[,<span class="dv">2</span><span class="sc">:</span><span class="dv">20</span>])[correlated]</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove correlated variables</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs_uncor <span class="ot">&lt;-</span> bioclim_pres_abs[, <span class="fu">which</span>(<span class="sc">!</span><span class="fu">colnames</span>(bioclim_pres_abs) <span class="sc">%in%</span> names_correlated)]</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># get predictor names of uncorrelated variables</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>predictor_vars <span class="ot">&lt;-</span> <span class="fu">colnames</span>(bioclim_pres_abs_uncor)[<span class="fu">grep</span>(<span class="st">&quot;wc2.1_&quot;</span>, <span class="fu">colnames</span>(bioclim_pres_abs_uncor))]</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># check which ones were retained</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(predictor_vars)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check variable collinearity</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>correlation_matrix <span class="ot">&lt;-</span> <span class="fu">cor</span>(bioclim_pres_abs[,<span class="dv">2</span><span class="sc">:</span><span class="dv">20</span>])</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>correlated <span class="ot">&lt;-</span> <span class="fu">findCorrelation</span>(correlation_matrix)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>names_correlated <span class="ot">&lt;-</span> <span class="fu">colnames</span>(bioclim_pres_abs[,<span class="dv">2</span><span class="sc">:</span><span class="dv">20</span>])[correlated]</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove correlated variables</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>bioclim_pres_abs_uncor <span class="ot">&lt;-</span> bioclim_pres_abs[, <span class="fu">which</span>(<span class="sc">!</span><span class="fu">colnames</span>(bioclim_pres_abs) <span class="sc">%in%</span> names_correlated)]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># get predictor names of uncorrelated variables</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>predictor_vars <span class="ot">&lt;-</span> <span class="fu">colnames</span>(bioclim_pres_abs_uncor)[<span class="fu">grep</span>(<span class="st">&quot;wc2.1_&quot;</span>, <span class="fu">colnames</span>(bioclim_pres_abs_uncor))]</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># check which ones were retained</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(predictor_vars)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now that we have a set of uncorrelated predictor variables, we can define our models and fit them. Here the spline values is given as k = 4, for more complex curves you can increase this value, or for more simple curves you can reduce this.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># establish model formulas for GLM and GAM</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>formula_glm <span class="ot">&lt;-</span> <span class="fu">formula</span>(<span class="fu">paste0</span>(<span class="st">&quot;presence ~ &quot;</span>, <span class="fu">paste0</span>(predictor_vars, <span class="at">collapse =</span> <span class="st">&quot; + &quot;</span>)))</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>formula_gam <span class="ot">&lt;-</span> <span class="fu">formula</span>(<span class="fu">paste0</span>(<span class="st">&quot;presence ~ &quot;</span>, <span class="fu">paste0</span>(<span class="st">&quot;s(&quot;</span>, predictor_vars,<span class="st">&quot;,4)&quot;</span>, <span class="at">collapse =</span> <span class="st">&quot; + &quot;</span>)))</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># look at these - how do they differ?</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(formula_glm)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(formula_gam)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># establish model formulas for GLM and GAM</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>formula_glm <span class="ot">&lt;-</span> <span class="fu">formula</span>(<span class="fu">paste0</span>(<span class="st">&quot;presence ~ &quot;</span>, <span class="fu">paste0</span>(predictor_vars, <span class="at">collapse =</span> <span class="st">&quot; + &quot;</span>)))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>formula_gam <span class="ot">&lt;-</span> <span class="fu">formula</span>(<span class="fu">paste0</span>(<span class="st">&quot;presence ~ &quot;</span>, <span class="fu">paste0</span>(<span class="st">&quot;s(&quot;</span>, predictor_vars,<span class="st">&quot;,4)&quot;</span>, <span class="at">collapse =</span> <span class="st">&quot; + &quot;</span>)))</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># look at these - how do they differ?</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(formula_glm)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(formula_gam)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now fit the models and look at the model summaries.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit GLM (logistic regression)</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>glm_sdm <span class="ot">&lt;-</span> <span class="fu">glm</span>(formula_glm, <span class="at">data=</span>bioclim_pres_abs_uncor, <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>))</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(glm_sdm)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit GAM</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>gam_sdm <span class="ot">&lt;-</span> <span class="fu">gam</span>(formula_gam,<span class="at">data=</span>bioclim_pres_abs_uncor, <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>))</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(gam_sdm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit GLM (logistic regression)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>glm_sdm <span class="ot">&lt;-</span> <span class="fu">glm</span>(formula_glm, <span class="at">data=</span>bioclim_pres_abs_uncor, <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(glm_sdm)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit GAM</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>gam_sdm <span class="ot">&lt;-</span> <span class="fu">gam</span>(formula_gam,<span class="at">data=</span>bioclim_pres_abs_uncor, <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(gam_sdm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="task-2" class="level4">
 <h4 class="anchored" data-anchor-id="task-2">Task 2</h4>
@@ -2383,55 +2408,55 @@ vertical-align: -.125em;
 <p>D-squared and AIC tell us how well our models fit the data, but they don’t necessarily tell us how well the models predict new or unseen data. To evaluate predictive performance, we need to test how well our models distinguish suitable from unsuitable environments.</p>
 <p>A common way to do this is by plotting a Receiver Operating Characteristic (ROC) curve and calculating the Area Under the Curve (AUC). AUC measures how well the model separates presences from absences across a range of thresholds. Values closer to 1 indicate better discrimination, while values around 0.5 suggest the model performs no better than random guessing.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split presence and background</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> bioclim_pres_abs[<span class="fu">which</span>(bioclim_pres_abs<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">1</span>),]</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> bioclim_pres_abs[<span class="fu">which</span>(bioclim_pres_abs<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">0</span>),]</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate using AUC, ROC, Kappa</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>glm_eval <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>p,  <span class="at">a=</span>a, <span class="at">model=</span>glm_sdm, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>gam_eval <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>p, <span class="at">a=</span>a, <span class="at">model=</span>gam_sdm, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot ROC and Kappa</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_eval, <span class="st">&quot;ROC&quot;</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_eval, <span class="st">&quot;ROC&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split presence and background</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> bioclim_pres_abs[<span class="fu">which</span>(bioclim_pres_abs<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">1</span>),]</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> bioclim_pres_abs[<span class="fu">which</span>(bioclim_pres_abs<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">0</span>),]</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate using AUC, ROC, Kappa</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>glm_eval <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>p,  <span class="at">a=</span>a, <span class="at">model=</span>glm_sdm, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>gam_eval <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>p, <span class="at">a=</span>a, <span class="at">model=</span>gam_sdm, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot ROC and Kappa</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_eval, <span class="st">&quot;ROC&quot;</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_eval, <span class="st">&quot;ROC&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <ul>
 <li><strong>Question:</strong> How did your models perform?</li>
 </ul>
 <p>But how stable are these AUC values? and how well does the model perform when evaluating the model on unseen data? To explore this, we’ll use k-fold cross-validation. This technique splits the data into k subsets (or “folds”), trains the model on k – 1 of them, and tests it on the remaining fold. This is repeated k times, giving us a better estimate of how variable model performance is across different subsets of the data.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define number of folds</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># randomly assign rows of data to a fold</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>k_fold <span class="ot">&lt;-</span> <span class="fu">kfold</span>(bioclim_pres_abs, <span class="at">k=</span>K)</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># set up a table to store results</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>auc_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k=</span><span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">glm_AUC=</span><span class="cn">NA</span>, <span class="at">gam_AUC=</span><span class="cn">NA</span>)</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># loop over each fold</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K){</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># separate folds into train and test data</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  train <span class="ot">&lt;-</span> bioclim_pres_abs[k_fold<span class="sc">!=</span>k,]</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  test <span class="ot">&lt;-</span> bioclim_pres_abs[k_fold<span class="sc">==</span>k,]</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># update model using new train subset</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  modtmp_glm <span class="ot">&lt;-</span> <span class="fu">update</span>(glm_sdm, <span class="at">data =</span> train)</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  modtmp_gam <span class="ot">&lt;-</span> <span class="fu">update</span>(gam_sdm, <span class="at">data =</span> train)</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># evaluate model on test subset</span></span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  glm_eval_tmp <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">1</span>),], <span class="at">a=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">0</span>),], <span class="at">model=</span>modtmp_glm, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>  gam_eval_tmp <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">1</span>),], <span class="at">a=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">0</span>),], <span class="at">model=</span>modtmp_gam, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># store the AUC values</span></span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>  auc_df[k, <span class="st">&quot;glm_AUC&quot;</span>] <span class="ot">&lt;-</span> glm_eval_tmp<span class="sc">@</span>auc</span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>  auc_df[k, <span class="st">&quot;gam_AUC&quot;</span>] <span class="ot">&lt;-</span> gam_eval_tmp<span class="sc">@</span>auc</span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co"># take a look at change in AUC on different folds</span></span>
-<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(auc_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define number of folds</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># randomly assign rows of data to a fold</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>k_fold <span class="ot">&lt;-</span> <span class="fu">kfold</span>(bioclim_pres_abs, <span class="at">k=</span>K)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># set up a table to store results</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>auc_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k=</span><span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">glm_AUC=</span><span class="cn">NA</span>, <span class="at">gam_AUC=</span><span class="cn">NA</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># loop over each fold</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K){</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># separate folds into train and test data</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  train <span class="ot">&lt;-</span> bioclim_pres_abs[k_fold<span class="sc">!=</span>k,]</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  test <span class="ot">&lt;-</span> bioclim_pres_abs[k_fold<span class="sc">==</span>k,]</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># update model using new train subset</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  modtmp_glm <span class="ot">&lt;-</span> <span class="fu">update</span>(glm_sdm, <span class="at">data =</span> train)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  modtmp_gam <span class="ot">&lt;-</span> <span class="fu">update</span>(gam_sdm, <span class="at">data =</span> train)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># evaluate model on test subset</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>  glm_eval_tmp <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">1</span>),], <span class="at">a=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">0</span>),], <span class="at">model=</span>modtmp_glm, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  gam_eval_tmp <span class="ot">&lt;-</span> <span class="fu">evaluate</span>(<span class="at">p=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">1</span>),], <span class="at">a=</span>test[<span class="fu">which</span>(test<span class="sc">$</span>presence<span class="sc">==</span><span class="dv">0</span>),], <span class="at">model=</span>modtmp_gam, <span class="at">type=</span><span class="st">&#39;response&#39;</span>)</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># store the AUC values</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  auc_df[k, <span class="st">&quot;glm_AUC&quot;</span>] <span class="ot">&lt;-</span> glm_eval_tmp<span class="sc">@</span>auc</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  auc_df[k, <span class="st">&quot;gam_AUC&quot;</span>] <span class="ot">&lt;-</span> gam_eval_tmp<span class="sc">@</span>auc</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="co"># take a look at change in AUC on different folds</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(auc_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <ul>
 <li><strong>Question:</strong> Are the AUC scores in K-fold very different from scores from the full model? What does this say about model transferability on new data?</li>
@@ -2445,49 +2470,98 @@ vertical-align: -.125em;
 <h1><strong>4</strong>: SDM Predictions</h1>
 <p>Once we’ve trained and evaluated our models, the next step is to visualize where the species is likely to occur based on the environmental predictors. This is done by projecting the model predictions across the landscape, giving us a continuous surface of habitat suitability values between 0 and 1.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict to spatial layers</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>glm_prediction <span class="ot">&lt;-</span> <span class="fu">predict</span>(bioclim_data, glm_sdm, <span class="at">type=</span><span class="st">&quot;response&quot;</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>gam_prediction <span class="ot">&lt;-</span> <span class="fu">predict</span>(bioclim_data, gam_sdm, <span class="at">type=</span><span class="st">&quot;response&quot;</span>)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot model predictions</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction, <span class="at">main=</span><span class="st">&quot;glm&quot;</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction, <span class="at">main=</span><span class="st">&quot;gam&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict to spatial layers</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>glm_prediction <span class="ot">&lt;-</span> <span class="fu">predict</span>(bioclim_data, glm_sdm, <span class="at">type=</span><span class="st">&quot;response&quot;</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>gam_prediction <span class="ot">&lt;-</span> <span class="fu">predict</span>(bioclim_data, gam_sdm, <span class="at">type=</span><span class="st">&quot;response&quot;</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot model predictions</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction, <span class="at">main=</span><span class="st">&quot;glm&quot;</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction, <span class="at">main=</span><span class="st">&quot;gam&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="thresholding-habitat-suitability" class="level4">
 <h4 class="anchored" data-anchor-id="thresholding-habitat-suitability">Thresholding Habitat Suitability</h4>
 <p>To translate these continuous predictions into a map of presence vs. absence, we need to apply a threshold. One common approach is to use the threshold that maximizes the Kappa statistic, which balances both sensitivity (true positives) and specificity (true negatives).</p>
 <p>After thresholding, we can create binary maps showing predicted suitable (1) and unsuitable (0) areas. These maps help us estimate the species’ potential distribution and visually assess model differences.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get threshold using maximum kappa</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>glm_threshold_val <span class="ot">&lt;-</span> <span class="fu">threshold</span>(glm_eval, <span class="at">stat =</span> <span class="st">&quot;kappa&quot;</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>gam_threshold_val <span class="ot">&lt;-</span> <span class="fu">threshold</span>(gam_eval, <span class="at">stat =</span> <span class="st">&quot;kappa&quot;</span>)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply threshold to get binary maps</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction <span class="sc">&gt;</span> glm_threshold_val, <span class="at">main=</span><span class="st">&quot;GLM binary&quot;</span>)</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction <span class="sc">&gt;</span> gam_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get threshold using maximum kappa</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>glm_threshold_val <span class="ot">&lt;-</span> <span class="fu">threshold</span>(glm_eval, <span class="at">stat =</span> <span class="st">&quot;kappa&quot;</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>gam_threshold_val <span class="ot">&lt;-</span> <span class="fu">threshold</span>(gam_eval, <span class="at">stat =</span> <span class="st">&quot;kappa&quot;</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply threshold to get binary maps</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction <span class="sc">&gt;</span> glm_threshold_val, <span class="at">main=</span><span class="st">&quot;GLM binary&quot;</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction <span class="sc">&gt;</span> gam_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="putting-it-together" class="level4">
 <h4 class="anchored" data-anchor-id="putting-it-together">Putting it together</h4>
 <p>Finally, we’ll overlay our species occurrence records and alpha hull boundary on the binary prediction map. This lets us compare the model-based distribution with the observed occurrences, giving us a sense of how well the model aligns with known data.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with occurrence records</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction <span class="sc">&gt;</span> gam_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(occ_sp, <span class="at">add=</span>T, <span class="at">pch=</span><span class="dv">1</span>)</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ahull_v, <span class="at">add=</span>T)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction <span class="sc">&gt;</span> glm_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(occ_sp, <span class="at">add=</span>T, <span class="at">pch=</span><span class="dv">1</span>)</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ahull_v, <span class="at">add=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with occurrence records</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction <span class="sc">&gt;</span> gam_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(occ_sp, <span class="at">add=</span>T, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span><span class="fl">0.5</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ahull_v, <span class="at">add=</span>T)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction <span class="sc">&gt;</span> glm_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(occ_sp, <span class="at">add=</span>T, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span><span class="fl">0.5</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ahull_v, <span class="at">add=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <ul>
-<li><p><strong>Question:</strong> Which method provides a better representation of the species range?</p></li>
+<li><p><strong>Question:</strong> Which method provides a better representation of the species range? and how do they compare to our geometric SDMs from last week?</p></li>
 <li><p><strong>Question:</strong> What might we do to improve our SDM models?</p></li>
 </ul>
+<hr>
 </section>
+</section>
+<section id="sdm-predictions-through-time" class="level1">
+<h1><strong>5</strong>: SDM Predictions Through Time</h1>
+<p>If we’re happy with our model in the present and convinced we have accurately modelled the niche of the species, we might want to ask how the species distribution has changed through time. Commonly, people look to model the change in distribution into the future using models of climate change under different emissions scenarios. Equally, we might also want to know how the species was distributed in the past to understand how population structure might have evolved over time when conditions were vastly different to today. One such period is the Last Glacial Maximum ~21,000 years ago. During the LGM, Australia looked very different, it was a colder and drier place than the present day and many species may have contracted their geographic ranges to warmer and more mesic refugia. Lets see what our SDM predicts for the distribution of the Frilled Lizard at the LGM!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load bioclim data for the LGM (from CHELSA)</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>lgm_bioclim_data <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="st">&quot;climate/chelsa_01_LGM.tif&quot;</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># The names of the different variables must match exactly</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(bioclim_data)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lgm_bioclim_data)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co"># first make lgm names lower case</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lgm_bioclim_data) <span class="ot">&lt;-</span> <span class="fu">tolower</span>(<span class="fu">names</span>(lgm_bioclim_data) )</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co"># add in the prefix</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lgm_bioclim_data) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;wc2.1_5m_&quot;</span>, <span class="fu">names</span>(lgm_bioclim_data) )</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="co"># remove the 0 from bio1-9</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lgm_bioclim_data)[<span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>] <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;0&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="fu">names</span>(lgm_bioclim_data)[<span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>])</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="co"># add a underscore between bio and the number</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a> <span class="fu">names</span>(lgm_bioclim_data) <span class="ot">&lt;-</span>  <span class="fu">gsub</span>(<span class="st">&quot;(bio)([0-9]+)&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1_</span><span class="sc">\\</span><span class="st">2&quot;</span>, <span class="fu">names</span>(lgm_bioclim_data))</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="co"># check they match</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(bioclim_data) <span class="sc">%in%</span> <span class="fu">names</span>(lgm_bioclim_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Ok now we have data that represents the same variables, with matching names, at two different times. We can now predict the model on this new data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>glm_prediction_lgm <span class="ot">&lt;-</span> <span class="fu">predict</span>(lgm_bioclim_data, glm_sdm, <span class="at">type=</span><span class="st">&quot;response&quot;</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>gam_prediction_lgm <span class="ot">&lt;-</span> <span class="fu">predict</span>(lgm_bioclim_data, gam_sdm, <span class="at">type=</span><span class="st">&quot;response&quot;</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot model predictions</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction_lgm, <span class="at">main=</span><span class="st">&quot;glm&quot;</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction_lgm, <span class="at">main=</span><span class="st">&quot;gam&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply threshold to get binary maps</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(glm_prediction_lgm <span class="sc">&gt;</span> glm_threshold_val, <span class="at">main=</span><span class="st">&quot;GLM binary&quot;</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_prediction_lgm <span class="sc">&gt;</span> gam_threshold_val, <span class="at">main=</span><span class="st">&quot;GAM binary&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<ul>
+<li><strong>Question:</strong> What kind of changes in the distribution of the species is predicted by the model? How could we validate this prediction?</li>
+</ul>
 </section>
 <section id="fin" class="level1">
 <h1>Fin!</h1>

@@ -177,7 +177,7 @@ Plot different buffer sizes and decide which size is most appropriate for the fr
 ```{r}
 
 # choose buffer distance in meters
-buffer_distance <- XXX # CHANGE THIS
+buffer_distance <- 250000 # CHANGE THIS
 
 # create buffer in sf
 buffer_iucn <- st_buffer(iucn_sf, buffer_distance)
@@ -284,7 +284,7 @@ Choose different alpha values and see how this affects the alpha hull (Hint: val
 
 ```{r}
 
-alpha <- XXX # choose alpha value
+alpha <- 5 # choose alpha value
 
 # Compute Alpha Hull
 xy_df <- data.frame(x = lon, y = lat)

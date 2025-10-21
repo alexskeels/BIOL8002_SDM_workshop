@@ -99,12 +99,41 @@ bck <- spatSample(bioclim_data[[1]], 10000, method = "random", as.points = TRUE,
 bck_outside <- erase(bck, ahull_v)
 
 # Remove points outside the alpha hull
-bck_inside <- mask(bck, ahull_v)
+bck_inside <- mask(bck, buffer(ahull_v, width=500000))
 
 # plot inside versus outside
 plot(bioclim_data[[1]], main = "Mean Annual Temperature")
-plot(bck_inside , add = TRUE, col = "blue", pch = 3)
 plot(bck_outside , add = TRUE, col = "red", pch = 3)
+plot(bck_inside , add = TRUE, col = "blue", pch = 3)
+```
+
+Randomly sampling points from inside or outside the study area does not account for the biases present in the occurrence data. Most occurrence points are found along roads or close to urban areas. One way of dealing with this bias in the occurence points, is to replicate the same biases in the background points. For example we could preferentially sample backgrounds points in places where people have sampled other closely related species of Agamid lizards. To do this we can create a density map of occurence records for the family.
+
+```{r}
+# read in distribution of all agamid species
+agamid_occ <- read.csv("distribution/agamidae.csv")
+
+# convert to spatVect object
+agamid_occ <- vect(agamid_occ, geom=c("decimalLongitude", "decimalLatitude"))
+
+# get density of records in grid cells using rasterize function
+agamid_density <- rasterize(agamid_occ, bioclim_data[[1]], fun="sum" )
+
+# plot it out - where are the highest density of occurences?
+plot(log(agamid_density))
+```
+
+Now lets sample some background points accounting for this bias.
+
+```{r}
+# Sample 10,000 random points from across grid cells in the raster
+bck_bias <- spatSample(bioclim_data[[1]], 10000, method = "stratified", weights=agamid_density, as.points = TRUE, na.rm = TRUE)
+
+# Remove points that fall within the alpha hull 
+bck_bias_outside <- erase(bck_bias, ahull_v)
+
+# Remove points outside the alpha hull
+bck_bias_inside <- mask(bck_bias, buffer(ahull_v, width=500000))
 ```
 
 ### Extract climate from presence / absence records
@@ -141,7 +170,7 @@ ggplot(bioclim_pres_abs, aes(x=wc2.1_5m_bio_1, fill=as.factor(presence)))+
 
 #### Task 1
 
-Plot different the distribution of a couple of different tempereature and precipitation bioclim variables and make a note of how the presence and absence points occupy different parts of the climate space. Repeat for the two alternative kinds of background sampling methods.
+Plot different the distribution of a couple of different temperature and precipitation bioclim variables and make a note of how the presence and absence points occupy different parts of the climate space. Repeat for the two alternative kinds of background sampling methods.
 
 -   **Question:** What is the main difference between sampling background points inside or outside the known distribution? How might this affect an SDM?
 
@@ -312,17 +341,75 @@ Finally, we’ll overlay our species occurrence records and alpha hull boundary 
 # Plot with occurrence records
 par(mfrow=c(1,2))
 plot(gam_prediction > gam_threshold_val, main="GAM binary")
-plot(occ_sp, add=T, pch=1)
+plot(occ_sp, add=T, pch=16, cex=0.5)
 plot(ahull_v, add=T)
 
 plot(glm_prediction > glm_threshold_val, main="GAM binary")
-plot(occ_sp, add=T, pch=1)
+plot(occ_sp, add=T, pch=16, cex=0.5)
 plot(ahull_v, add=T)
 
 ```
 
--   **Question:** Which method provides a better representation of the species range?
+-   **Question:** Which method provides a better representation of the species range? and how do they compare to our geometric SDMs from last week?
 
 -   **Question:** What might we do to improve our SDM models?
+
+------------------------------------------------------------------------
+
+# **5**: SDM Predictions Through Time
+
+If we're happy with our model in the present and convinced we have accurately modelled the niche of the species, we might want to ask how the species distribution has changed through time. Commonly, people look to model the change in distribution into the future using models of climate change under different emissions scenarios. Equally, we might also want to know how the species was distributed in the past to understand how population structure might have evolved over time when conditions were vastly different to today. One such period is the Last Glacial Maximum \~21,000 years ago. During the LGM, Australia looked very different, it was a colder and drier place than the present day and many species may have contracted their geographic ranges to warmer and more mesic refugia. Lets see what our SDM predicts for the distribution of the Frilled Lizard at the LGM!
+
+```{r}
+# load bioclim data for the LGM (from CHELSA)
+lgm_bioclim_data <- rast("climate/chelsa_01_LGM.tif")
+
+# The names of the different variables must match exactly
+names(bioclim_data)
+names(lgm_bioclim_data)
+
+
+# first make lgm names lower case
+names(lgm_bioclim_data) <- tolower(names(lgm_bioclim_data) )
+
+# add in the prefix
+names(lgm_bioclim_data) <- paste0("wc2.1_5m_", names(lgm_bioclim_data) )
+
+# remove the 0 from bio1-9
+names(lgm_bioclim_data)[1:9] <- gsub("0", "", names(lgm_bioclim_data)[1:9])
+
+# add a underscore between bio and the number
+ names(lgm_bioclim_data) <-  gsub("(bio)([0-9]+)", "\\1_\\2", names(lgm_bioclim_data))
+
+# check they match
+names(bioclim_data) %in% names(lgm_bioclim_data)
+
+
+
+```
+
+Ok now we have data that represents the same variables, with matching names, at two different times. We can now predict the model on this new data.
+
+```{r}
+glm_prediction_lgm <- predict(lgm_bioclim_data, glm_sdm, type="response")
+gam_prediction_lgm <- predict(lgm_bioclim_data, gam_sdm, type="response")
+
+
+# Plot model predictions
+par(mfrow=c(1,2))
+plot(glm_prediction_lgm, main="glm")
+plot(gam_prediction_lgm, main="gam")
+
+
+```
+
+```{r}
+# Apply threshold to get binary maps
+par(mfrow=c(1,2))
+plot(glm_prediction_lgm > glm_threshold_val, main="GLM binary")
+plot(gam_prediction_lgm > gam_threshold_val, main="GAM binary")
+```
+
+-   **Question:** What kind of changes in the distribution of the species is predicted by the model? How could we validate this prediction?
 
 # Fin!
