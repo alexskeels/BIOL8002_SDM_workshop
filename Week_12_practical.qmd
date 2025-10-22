@@ -80,6 +80,44 @@ plot(bioclim_data[[which(names(bioclim_data)=="wc2.1_5m_bio_12")]], main = "Mean
 
 ```
 
+```{r}
+
+
+# Using the sf pacakge, turn the records in spatial points 
+occ_sf <- st_as_sf(occ, coords = c("X", "Y"), crs = 4326)
+
+leaflet(occ_sf) |>
+  addTiles() |>  # optional — can remove if you don't want any base tiles
+  addRasterImage(
+    bioclim_data[[1]],
+    colors = colorNumeric("viridis", values(bioclim_data[[1]]), na.color = NA),
+    opacity = 0.6
+  ) |>
+  addLegend(
+    pal = colorNumeric("viridis", values(bioclim_data[[1]]), na.color = NA),
+    values = values(bioclim_data[[1]]),
+    title = "Temperature"
+  ) |>
+  # Add IUCN polygon
+  addPolygons(
+    data = ahull_v,
+    fillColor = "#009E73",
+    color = "#007F5F",
+    weight = 1,
+    fillOpacity = 0.4,
+    popup = "IUCN Distribution"
+  ) %>%
+  # Add occurrence records
+  addCircleMarkers(
+    data = occ_sf,
+    radius = 6,
+    fillOpacity = 0.6,
+    stroke = TRUE,
+    weight = 1
+ 
+  )
+```
+
 ------------------------------------------------------------------------
 
 # **2**: Pseudo-Absence Points
